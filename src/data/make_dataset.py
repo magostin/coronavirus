@@ -6,29 +6,6 @@ from datetime import datetime
 
 import click
 import pandas as pd
-import tabula
-
-
-def process_dpc_table(file):
-    logger = logging.getLogger(__name__)
-    logger.info(f"Processing {file}")
-    tables = tabula.read_pdf(file, lattice=True, multiple_tables=True)
-    timestamp = tables[0].iloc[0, 1]
-    m = re.search(r"(\d+)\/(\d+)\/(\d+)", timestamp)
-    df = tables[0].iloc[3:-1].fillna(0)
-    df.columns = [
-        "regione",
-        "ricoverati_con_sintomi",
-        "terapia_intensiva",
-        "isolamento_domiciliare",
-        "totale_positivi",
-        "guariti",
-        "deceduti",
-        "totali",
-        "tamponi",
-    ]
-    df["date"] = datetime.fromisoformat("{2}-{1}-{0}".format(*m.groups()))
-    return df
 
 
 @click.command()
@@ -62,26 +39,12 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     store[f"CSSE"] = csse_datasets[0].join(csse_datasets[1:]).reset_index()
 
     logger.info("Processing Protezione Civile original data")
-    data_path = Path(input_filepath) / "protezione_civile"
-    tables = [process_dpc_table(file) for file in data_path.glob("Dati Riepilogo*.pdf")]
-    tables.append(
-        pd.read_excel(
-            Path(input_filepath) / "coronavirus_protezionecivile.xlsx"
-        ).fillna(0)
-    )
-    dpc_df = pd.concat(tables).fillna(0)
-    for field in (
-        "ricoverati_con_sintomi",
-        "terapia_intensiva",
-        "isolamento_domiciliare",
-        "totale_positivi",
-        "guariti",
-        "deceduti",
-        "totali",
-        "tamponi",
-    ):
-        dpc_df[field] = pd.to_numeric(dpc_df[field])
-    store["DPC"] = dpc_df
+    data_path = Path(input_filepath) / "protezione-civile"
+    
+    store["dpc-nazionale"] = pd.read_csv(data_path / 'dati-andamento-nazionale' / 'dpc-covid19-ita-andamento-nazionale.csv')
+    store["dpc-province"] = pd.concat((pd.read_csv(prov_file, encoding='latin-1') for prov_file in Path(data_path / 'dati-province').glob('*.csv')))
+    reg_df = pd.concat((pd.read_csv(reg_file, encoding='latin-1') for reg_file in Path(data_path / 'dati-regioni').glob('*.csv')))
+    store["dpc-regioni"] = reg_df.rename(columns={"denominazione_regione": "regione"})
 
 
 if __name__ == "__main__":

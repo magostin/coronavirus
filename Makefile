@@ -27,10 +27,11 @@ requirements: test_environment
 
 update:
 	git -C data/raw/COVID-19 pull origin master
+	git -C data/raw/protezione-civile pull origin master
 
 ## Make Dataset
 data: update
-	rm data/processed/data.h5
+	rm -f data/processed/data.h5
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py data/raw data/processed
 
 ## Delete all compiled Python files
