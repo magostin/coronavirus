@@ -82,4 +82,4 @@ test_environment:
 	$(PYTHON_INTERPRETER) test_environment.py
 
 report:
-	jupyter nbconvert --execute --to html notebooks/reports/*.ipynb --output-dir=reports
+	jupyter nbconvert --execute --to html notebooks/reports/*.ipynb --no-input --output-dir=reports

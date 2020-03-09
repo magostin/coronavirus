@@ -8,6 +8,12 @@ import click
 import pandas as pd
 
 
+def read_dpc_csv(filename):
+    df = pd.read_csv(filename, encoding='latin-1')
+    df['data'] = pd.to_datetime(df.data)
+    return df
+
+
 @click.command()
 @click.argument("input_filepath", type=click.Path(exists=True))
 @click.argument("output_filepath", type=click.Path())
@@ -41,10 +47,12 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     logger.info("Processing Protezione Civile original data")
     data_path = Path(input_filepath) / "protezione-civile"
     
-    store["dpc-nazionale"] = pd.read_csv(data_path / 'dati-andamento-nazionale' / 'dpc-covid19-ita-andamento-nazionale.csv')
-    store["dpc-province"] = pd.concat((pd.read_csv(prov_file, encoding='latin-1') for prov_file in Path(data_path / 'dati-province').glob('*.csv')))
-    reg_df = pd.concat((pd.read_csv(reg_file, encoding='latin-1') for reg_file in Path(data_path / 'dati-regioni').glob('*.csv')))
-    store["dpc-regioni"] = reg_df.rename(columns={"denominazione_regione": "regione"})
+    logger.info("Processing Protezione Civile original data - National")
+    store["dpc-nazionale"] = read_dpc_csv(data_path / 'dati-andamento-nazionale' / 'dpc-covid19-ita-andamento-nazionale.csv')
+    logger.info("Processing Protezione Civile original data - Provinces")
+    store["dpc-province"] = read_dpc_csv(data_path / 'dati-province' / 'dpc-covid19-ita-province.csv').rename(columns={"denominazione_regione": "regione"})
+    logger.info("Processing Protezione Civile original data - Regions")
+    store["dpc-regioni"] = read_dpc_csv(data_path / 'dati-regioni' / 'dpc-covid19-ita-regioni.csv').rename(columns={"denominazione_regione": "regione"})
 
 
 if __name__ == "__main__":
