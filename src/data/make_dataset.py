@@ -7,11 +7,13 @@ from datetime import datetime
 import click
 import pandas as pd
 
+from ecdc import download_latest_data
+
 
 def read_dpc_csv(filename):
-    df = pd.read_csv(filename, encoding='latin-1')
-    df['data'] = pd.to_datetime(df.data)
-    return df
+    df = pd.read_csv(filename, encoding="utf-8", parse_dates=["data"])
+
+    return df.rename(columns={"denominazione_regione": "regione", "denominazione_provincia": "provincia"})
 
 
 @click.command()
@@ -25,6 +27,21 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     logger.info("Making final data set from raw data")
 
     store = pd.HDFStore(Path(output_filepath) / "data.h5")
+
+    
+    logger.info("Processing ECDC data")
+    data_path = (
+        Path(input_filepath) / "ecdc"
+    )
+    logger.info("Downloading latest ECDC data")
+    download_latest_data(data_path)
+    _, file_path = max((f.stat().st_mtime, f) for f in data_path.iterdir())
+    logger.info(f"Latest file: {file_path}")
+    df = pd.read_excel(file_path)
+    df['Country'] = df.CountryExp.str.title()
+    df['TotalCases'] = df.iloc[::-1].groupby('Country')['NewConfCases'].transform(pd.Series.cumsum)
+    df['TotalDeaths'] = df.iloc[::-1].groupby('Country')['NewDeaths'].transform(pd.Series.cumsum)
+    store[f"ECDC"] = df
 
     logger.info("Processing Johns Hopkins CSSE data")
     data_path = (
@@ -46,13 +63,40 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
 
     logger.info("Processing Protezione Civile original data")
     data_path = Path(input_filepath) / "protezione-civile"
-    
+
     logger.info("Processing Protezione Civile original data - National")
-    store["dpc-nazionale"] = read_dpc_csv(data_path / 'dati-andamento-nazionale' / 'dpc-covid19-ita-andamento-nazionale.csv')
+    store["dpc_nazionale"] = read_dpc_csv(
+        data_path
+        / "dati-andamento-nazionale"
+        / "dpc-covid19-ita-andamento-nazionale.csv"
+    )
     logger.info("Processing Protezione Civile original data - Provinces")
-    store["dpc-province"] = read_dpc_csv(data_path / 'dati-province' / 'dpc-covid19-ita-province.csv').rename(columns={"denominazione_regione": "regione"})
+    store["dpc_province"] = read_dpc_csv(
+        data_path / "dati-province" / "dpc-covid19-ita-province.csv"
+    ).rename(columns={"denominazione_regione": "regione", "denominazione_provincia": "provincia"})
     logger.info("Processing Protezione Civile original data - Regions")
-    store["dpc-regioni"] = read_dpc_csv(data_path / 'dati-regioni' / 'dpc-covid19-ita-regioni.csv').rename(columns={"denominazione_regione": "regione"})
+    reg_df = read_dpc_csv(
+        data_path / "dati-regioni" / "dpc-covid19-ita-regioni.csv"
+    ).rename(columns={"denominazione_regione": "regione"})
+    store["dpc_regioni"] = reg_df
+
+    reg_df = reg_df.rename(
+        columns={
+            "ricoverati_con_sintomi": "Ricoverati con sintomi",
+            "terapia_intensiva": "ICU",
+            "isolamento_domiciliare": "Isolamento domiciliare",
+            "dimessi_guariti": "Guariti",
+            "deceduti": "Deceduti",
+        }
+    ).drop([col for col in reg_df.columns if "totale" in col or "nuovi" in col or "tampon" in col], axis=1)
+    
+    reg_long_df = pd.melt(
+        reg_df,
+        id_vars=reg_df.columns[:6],
+        value_vars=reg_df.columns[6:],
+        var_name="status",
+    )
+    store["dpc_regioni_long"] = reg_long_df
 
 
 if __name__ == "__main__":
