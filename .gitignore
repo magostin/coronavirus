@@ -85,5 +85,7 @@ target/
 *.swp
 *.swo
 
+/reports/
+
 # Mypy cache
 .mypy_cache/
