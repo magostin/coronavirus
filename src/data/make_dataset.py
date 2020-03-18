@@ -46,6 +46,7 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     df["TotalDeaths"] = (
         df.iloc[::-1].groupby("Country")["Deaths"].transform(pd.Series.cumsum)
     )
+    df['Country'] = df.Country.str.replace('_', ' ')
     store[f"ECDC"] = df
 
     logger.info("Processing Johns Hopkins CSSE data")
