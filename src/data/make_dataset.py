@@ -31,6 +31,7 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     logger = logging.getLogger(__name__)
     logger.info("Making final data set from raw data")
 
+    pd.set_option("io.hdf.default_format", "table")
     store = pd.HDFStore(Path(output_filepath) / "data.h5")
 
     logger.info("Processing ECDC data")
@@ -39,14 +40,16 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     download_latest_data(data_path)
     _, file_path = max((f.stat().st_mtime, f) for f in data_path.iterdir())
     logger.info(f"Latest file: {file_path}")
-    df = pd.read_excel(file_path).rename(columns={"Countries and territories": "Country"})
+    df = pd.read_excel(file_path).rename(
+        columns={"Countries and territories": "Country"}
+    )
     df["TotalCases"] = (
         df.iloc[::-1].groupby("Country")["Cases"].transform(pd.Series.cumsum)
     )
     df["TotalDeaths"] = (
         df.iloc[::-1].groupby("Country")["Deaths"].transform(pd.Series.cumsum)
     )
-    df['Country'] = df.Country.str.replace('_', ' ')
+    df["Country"] = df.Country.str.replace("_", " ")
     store[f"ECDC"] = df
 
     logger.info("Processing Johns Hopkins CSSE data")
