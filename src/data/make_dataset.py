@@ -34,6 +34,9 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     pd.set_option("io.hdf.default_format", "table")
     store = pd.HDFStore(Path(output_filepath) / "data.h5")
 
+    #logger.info("Processing Coronascraper data")
+    #store['scraper'] = pd.read_csv(r'https://coronadatascraper.com/timeseries-tidy.csv')
+
     logger.info("Processing ECDC data")
     data_path = Path(input_filepath) / "ecdc"
     logger.info("Downloading latest ECDC data")
@@ -52,23 +55,25 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     df["Country"] = df.Country.str.replace("_", " ")
     store[f"ECDC"] = df
 
-    logger.info("Processing Johns Hopkins CSSE data")
-    data_path = (
-        Path(input_filepath) / "COVID-19/csse_covid_19_data/csse_covid_19_time_series"
-    )
+    # logger.info("Processing Johns Hopkins CSSE data")
+    # data_path = (
+    #     Path(input_filepath) / "COVID-19/csse_covid_19_data/csse_covid_19_time_series"
+    # )
 
-    csse_datasets = []
-    for dataset in ["Confirmed", "Deaths", "Recovered"]:
-        original_df = pd.read_csv(
-            data_path / f"time_series_19-covid-{dataset}.csv"
-        ).drop(["Lat", "Long"], axis="columns")
-        long_df = pd.melt(original_df, ["Country/Region", "Province/State"])
-        long_df.columns = ["Country", "Province", "Date", dataset]
-        long_df["Date"] = pd.to_datetime(long_df.Date)
-        csse_datasets.append(long_df.set_index(["Date", "Country", "Province"]))
-        store[f"TimeSeries{dataset}"] = long_df
+    # csse_datasets = []
+    # for dataset in ["confirmed", "deaths", "recovered"]:
+    #     logger.info(f"Processing Johns Hopkins CSSE data {dataset}")
+    #     original_df = pd.read_csv(
+    #         data_path / f"time_series_covid19_{dataset}_global.csv"
+    #     ).drop(["Lat", "Long"], axis="columns")
+    #     long_df = pd.melt(original_df, ["Country/Region", "Province/State"])
+    #     long_df.columns = ["Country", "Province", "Date", dataset]
+    #     long_df["Date"] = pd.to_datetime(long_df.Date)
+    #     csse_datasets.append(long_df.set_index(["Date", "Country", "Province"]))
+    #     store[f"TimeSeries{dataset}"] = long_df
 
-    store[f"CSSE"] = csse_datasets[0].join(csse_datasets[1:]).reset_index()
+    #logger.info("Merging Johns Hopkins CSSE data")
+    #store[f"CSSE"] = csse_datasets[0].join(csse_datasets[1:]).reset_index()
 
     logger.info("Processing Protezione Civile original data")
     data_path = Path(input_filepath) / "protezione-civile"
@@ -109,14 +114,15 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
             if "totale" in col or "nuovi" in col or "tampon" in col
         ],
         axis=1,
-    )
+    ).drop(['note_it', 'note_en'], axis=1)
 
     reg_long_df = pd.melt(
         reg_df,
         id_vars=reg_df.columns[:6],
         value_vars=reg_df.columns[6:],
         var_name="status",
-    )
+    ).dropna()
+
     store["dpc_regioni_long"] = reg_long_df
 
 
