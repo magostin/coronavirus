@@ -44,13 +44,13 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     _, file_path = max((f.stat().st_mtime, f) for f in data_path.iterdir())
     logger.info(f"Latest file: {file_path}")
     df = pd.read_excel(file_path).rename(
-        columns={"Countries and territories": "Country"}
+        columns={"countriesAndTerritories": "Country"}
     )
     df["TotalCases"] = (
-        df.iloc[::-1].groupby("Country")["Cases"].transform(pd.Series.cumsum)
+        df.iloc[::-1].groupby("Country")["cases"].transform(pd.Series.cumsum)
     )
     df["TotalDeaths"] = (
-        df.iloc[::-1].groupby("Country")["Deaths"].transform(pd.Series.cumsum)
+        df.iloc[::-1].groupby("Country")["deaths"].transform(pd.Series.cumsum)
     )
     df["Country"] = df.Country.str.replace("_", " ")
     store[f"ECDC"] = df
