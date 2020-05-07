@@ -3,7 +3,4 @@ from pyprojroot import here
 
 
 def get_processed_dataset(name):
-    store = pd.HDFStore(here("./data/processed/data.h5"))
-    df = store[name]
-    store.close()
-    return df 
+    return pd.read_hdf(here("./data/processed/data.h5"), name)
