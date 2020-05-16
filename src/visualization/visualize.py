@@ -1,21 +1,8 @@
 import altair as alt
+import altair_ifx as ifx
 
-
-def theme_1(*args, **kwargs):
-    return {
-        "width": 400,
-        "height": 300,
-        "config": {
-            "line": {"strokeWidth": 4,},
-            "style": {"bar": {"size": 20}},
-            "legend": {"symbolSize": 100, "titleFontSize": 20, "labelFontSize": 20},
-            "axis": {"titleFontSize": 20, "labelFontSize": 20},
-        },
-    }
-
-
-alt.themes.register("theme_1", theme_1)
-
+alt.themes.register("ifx", ifx.theme)
+alt.themes.enable("ifx")
 
 from tabulate import tabulate
 

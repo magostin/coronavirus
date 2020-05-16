@@ -32,6 +32,8 @@ def ecdc_dataframe(file_path):
     )
     df["TotalCasesPer1MPop"] = 1.0e6 * df.TotalCases / df.popData2018
     df["TotalDeathsPer1MPop"] = 1.0e6 * df.TotalDeaths / df.popData2018
+    df["CasesPer1MPop"] = 1.0e6 * df.cases / df.popData2018
+    df["DeathsPer1MPop"] = 1.0e6 * df.deaths / df.popData2018
     df["Lethality"] = 100.0 * df.TotalDeaths / df.TotalCases
     df["Country"] = df.Country.str.replace("_", " ")
     return df
