@@ -36,4 +36,5 @@ def ecdc_dataframe(file_path):
     df["DeathsPer1MPop"] = 1.0e6 * df.deaths / df.popData2018
     df["Lethality"] = 100.0 * df.TotalDeaths / df.TotalCases
     df["Country"] = df.Country.str.replace("_", " ")
+    df["Date"] = pd.to_datetime(df.dateRep, format="%d/%m/%Y")
     return df

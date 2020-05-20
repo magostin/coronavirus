@@ -9,7 +9,7 @@ import pandas as pd
 
 from ecdc import download_latest_data, ecdc_dataframe
 from dpc import add_calc, calculate_per_1M_pop
-from istat import build_regioni_df, build_province_df, aggiorna_codice_regione
+from istat import build_regioni_df, build_province_df
 
 def read_dpc_csv(filename):
     df = pd.read_csv(filename, encoding="utf-8", parse_dates=["data"])
@@ -97,7 +97,6 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
         data_path / "dati-regioni" / "dpc-covid19-ita-regioni.csv"
     ).rename(columns={"denominazione_regione": "regione"})
     reg_df.to_hdf(hdf_file, "dpc_regioni_raw")
-    reg_df['codice_regione'] = reg_df.apply(aggiorna_codice_regione, axis=1)
     reg_df = pd.merge(reg_df, regioni, on='codice_regione')
     reg_df = reg_df.join(reg_df.groupby('regione').apply(add_calc))
     calculate_per_1M_pop(reg_df).to_hdf(hdf_file, "dpc_regioni")
