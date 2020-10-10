@@ -21,3 +21,10 @@ def calculate_per_1M_pop(df):
     df['nuovi_positivi_per_1M_pop'] = 1e6 * df.nuovi_positivi / df.popolazione
     return df
 
+
+def prov_per_1M_pop(df):
+    df['nuovi_positivi'] = df.groupby('provincia').totale_casi.diff()
+    df['incremento'] = 100.0 * df['nuovi_positivi'] / df['totale_casi']
+    df['totale_casi_per_1M_pop'] = 1e6 * df.totale_casi / df.popolazione
+    df['nuovi_positivi_per_1M_pop'] = 1e6 * df.nuovi_positivi / df.popolazione
+    return df

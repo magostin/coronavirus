@@ -8,7 +8,7 @@ import click
 import pandas as pd
 
 from ecdc import download_latest_data, ecdc_dataframe
-from dpc import add_calc, calculate_per_1M_pop
+from dpc import add_calc, calculate_per_1M_pop, prov_per_1M_pop
 from istat import build_regioni_df, build_province_df
 
 def read_dpc_csv(filename):
@@ -41,7 +41,9 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     download_latest_data(data_path)
     _, file_path = max((f.stat().st_mtime, f) for f in data_path.iterdir())
     logger.info(f"Latest file: {file_path}")
-    ecdc_dataframe(file_path).to_hdf(hdf_file, "ECDC")
+    ecdc_df = ecdc_dataframe(file_path)
+    logger.info(f"ECDC latest update: {ecdc_df.Date.max()}")
+    ecdc_df.to_hdf(hdf_file, "ECDC")
 
     # logger.info("Processing Johns Hopkins CSSE data")
     # data_path = (
@@ -68,7 +70,7 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     istat = istat[(istat.STATCIV2 == 99) & (istat.ETA1 == 'TOTAL') & (istat.SEXISTAT1 == 9)][['ITTER107', 'Territorio', 'Value']].rename(columns={'Value': 'popolazione'})
     codici = pd.read_csv(Path(input_filepath) / 'istat/codici/Elenco-codici-statistici-e-denominazioni-al-01_01_2020.csv', encoding='Latin-1', sep=';').rename(columns={'NUTS2(3) ': 'NUTS2'})
     regioni = build_regioni_df(istat[istat.ITTER107.str.match(r'IT\w\d\b')], codici)[['codice_regione', 'popolazione']]
-    province = build_province_df(istat[istat.ITTER107.str.match(r'IT\w\d\d\b')], codici)[['codice_provincia', 'popolazione']]
+    province = build_province_df(istat[istat.ITTER107.str.match(r'IT\w\w\w\b')], codici)[['codice_provincia', 'popolazione']]
 
     logger.info("Processing Protezione Civile original data")
     data_path = Path(input_filepath) / "protezione-civile"
@@ -90,7 +92,7 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
         }
     )
     prov_df = pd.merge(prov_df, province, on="codice_provincia")
-    prov_df.to_hdf(hdf_file, "dpc_province")
+    prov_per_1M_pop(prov_df).to_hdf(hdf_file, "dpc_province")
 
     logger.info("Processing Protezione Civile original data - Regions")
     reg_df = read_dpc_csv(

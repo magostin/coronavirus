@@ -59,9 +59,9 @@ report:
 	papermill "notebooks\parametrized\riepilogo_regione.ipynb" "notebooks\reports\lombardia.ipynb" -p regione 3
 	papermill "notebooks\parametrized\country_summary.ipynb" "notebooks\reports\italy.ipynb" -p country 'Italy'
 	papermill "notebooks\parametrized\country_summary.ipynb" "notebooks\reports\austria.ipynb" -p country 'Austria'
-	papermill "notebooks\parametrized\country_summary.ipynb" "notebooks\reports\germany.ipynb" -p country 'Germany'
-	papermill "notebooks\parametrized\country_summary.ipynb" "notebooks\reports\spain.ipynb" -p country 'Spain'
-	papermill "notebooks\parametrized\country_summary.ipynb" "notebooks\reports\france.ipynb" -p country 'France'
-	papermill "notebooks\parametrized\country_summary.ipynb" "notebooks\reports\USA.ipynb" -p country 'United States of America'
-	papermill "notebooks\parametrized\country_summary.ipynb" "notebooks\reports\UK.ipynb" -p country 'United Kingdom'
+	#papermill "notebooks\parametrized\country_summary.ipynb" "notebooks\reports\germany.ipynb" -p country 'Germany'
+	#papermill "notebooks\parametrized\country_summary.ipynb" "notebooks\reports\spain.ipynb" -p country 'Spain'
+	#papermill "notebooks\parametrized\country_summary.ipynb" "notebooks\reports\france.ipynb" -p country 'France'
+	#papermill "notebooks\parametrized\country_summary.ipynb" "notebooks\reports\USA.ipynb" -p country 'United States of America'
+	#papermill "notebooks\parametrized\country_summary.ipynb" "notebooks\reports\UK.ipynb" -p country 'United Kingdom'
 	jupyter nbconvert --execute --to html notebooks/reports/*.ipynb --no-input --output-dir=reports
