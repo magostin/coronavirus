@@ -10,6 +10,7 @@ import pandas as pd
 from ecdc import download_latest_data, ecdc_dataframe
 from dpc import add_calc, calculate_per_1M_pop, prov_per_1M_pop
 from istat import build_regioni_df, build_province_df
+from data_gv_at import austria_data, austria_gkz
 
 def read_dpc_csv(filename):
     df = pd.read_csv(filename, encoding="utf-8", parse_dates=["data"])
@@ -35,35 +36,15 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     pd.set_option("io.hdf.default_format", "table")
     hdf_file = Path(output_filepath) / "data.h5"
 
-    logger.info("Processing ECDC data")
-    data_path = Path(input_filepath) / "ecdc"
-    logger.info("Downloading latest ECDC data")
-    download_latest_data(data_path)
-    _, file_path = max((f.stat().st_mtime, f) for f in data_path.iterdir())
-    logger.info(f"Latest file: {file_path}")
-    ecdc_df = ecdc_dataframe(file_path)
-    logger.info(f"ECDC latest update: {ecdc_df.Date.max()}")
-    ecdc_df.to_hdf(hdf_file, "ECDC")
-
-    # logger.info("Processing Johns Hopkins CSSE data")
-    # data_path = (
-    #     Path(input_filepath) / "COVID-19/csse_covid_19_data/csse_covid_19_time_series"
-    # )
-
-    # csse_datasets = []
-    # for dataset in ["confirmed", "deaths", "recovered"]:
-    #     logger.info(f"Processing Johns Hopkins CSSE data {dataset}")
-    #     original_df = pd.read_csv(
-    #         data_path / f"time_series_covid19_{dataset}_global.csv"
-    #     ).drop(["Lat", "Long"], axis="columns")
-    #     long_df = pd.melt(original_df, ["Country/Region", "Province/State"])
-    #     long_df.columns = ["Country", "Province", "Date", dataset]
-    #     long_df["Date"] = pd.to_datetime(long_df.Date)
-    #     csse_datasets.append(long_df.set_index(["Date", "Country", "Province"]))
-    #     store[f"TimeSeries{dataset}"] = long_df
-
-    #logger.info("Merging Johns Hopkins CSSE data")
-    #store[f"CSSE"] = csse_datasets[0].join(csse_datasets[1:]).reset_index()
+    # logger.info("Processing ECDC data")
+    # data_path = Path(input_filepath) / "ecdc"
+    # logger.info("Downloading latest ECDC data")
+    # download_latest_data(data_path)
+    # _, file_path = max((f.stat().st_mtime, f) for f in data_path.iterdir())
+    # logger.info(f"Latest file: {file_path}")
+    # ecdc_df = ecdc_dataframe(file_path)
+    # logger.info(f"ECDC latest update: {ecdc_df.Date.max()}")
+    # ecdc_df.to_hdf(hdf_file, "ECDC")
 
     logger.info("Processing ISTAT original data")
     istat = pd.read_csv(Path(input_filepath) / 'istat/popolazione/DCIS_POPRES1_06052020222758332.csv')
@@ -81,7 +62,9 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
         / "dati-andamento-nazionale"
         / "dpc-covid19-ita-andamento-nazionale.csv"
     )
-    naz_df.join(add_calc(naz_df)).to_hdf(hdf_file, "dpc_nazionale")
+    naz_df = naz_df.join(add_calc(naz_df))
+    naz_df['incidenza'] = naz_df['nuovi_positivi'].rolling(7).mean() * 1e6 / 60359546
+    naz_df.to_hdf(hdf_file, "dpc_nazionale")
     logger.info("Processing Protezione Civile original data - Provinces")
     prov_df = read_dpc_csv(
         data_path / "dati-province" / "dpc-covid19-ita-province.csv"
@@ -102,6 +85,10 @@ def main(input_filepath=Path("./data/raw"), output_filepath=Path("./data/process
     reg_df = pd.merge(reg_df, regioni, on='codice_regione')
     reg_df = reg_df.join(reg_df.groupby('regione').apply(add_calc))
     calculate_per_1M_pop(reg_df).to_hdf(hdf_file, "dpc_regioni")
+
+    logger.info("Processing Open Data Österreich data")
+    austria_data().to_hdf(hdf_file, "austria_country")
+    austria_gkz().to_hdf(hdf_file, "austria_gkz")
 
 
 if __name__ == "__main__":
